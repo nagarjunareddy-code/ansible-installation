@@ -1,0 +1,222 @@
+http://mithuntechnologies.com/devops/DevOpsToolsMithunTechnologies.html
+
+->sudo su
+->wget <epel>
+->ls 
+->yum install <epel ls> -y  ->yum install epel-relesase
+->yum install git python python-devel python-php openssh ansible -y
+->ansible --version                          pip openssl (sai)
+->sudo amazon-linux-extras install ansible2 (rhel-8 you install that time you can use command)
+->vi /etc/ansible/ansible.cfg
+#inventory=/etc/ansible/hosts (you can remove#)
+#sudo_user=root  (you can remove#)
+->vi /etc/ansible/hosts
+[demo]
+Private IPs (you can add group name ips)
+Private IPs
+--------------------------------------------------
+now you can do this staps sever&hosts
+->adduser arjun
+->passwd arjun
+enter in two times conformation passwd
+->visudo
+arjun ALL=(ALL)   NOPASSWD: ALL      (you can writte in this stop)
+->vi /etc/ssh/sshd_config
+#permitrootlogin yes (you can remove#)
+#passwordauthentication yes (you can remove#)
+passwordauthentication no  (you can add#)
+->service sshd restart 
+------------------------------------------------------------------
+server
+->su - arjun
+-> whoami
+->yum update -y
+->ssh <Private IP>   (yes& type passwd you can enter into hosts)
+->exit  (you can enter in to server)
+->ssh-keygen
+->enter button in 3times here
+->
+->cd .ssh/'.
+ 
+->ssh-copy-id arjun@<Private IP>
+->yes
+->enter passwd
+->same all staps in above 3commands
+->cd ..
+->ssh <Private IP>
+->ansible <groupname> -m ping
+->ansible <groupname> --list-hosts
+->ansible <groupname>[0] --list-hosts  (0-means firstnode ,1-means 2nd node)
+->ansible <groupname>[-1] --list-hosts (-1 means last node)
+->ansible <groupname>[0:1] --list-hosts (it will pick the two ips]
+->ansible all --list-hosts
+->ansible <groupname> -a "ls"
+->ansible <groupname> -a "touch myfile" (re run and verify idempotence)
+->ansible <groupname> -a "mkdir arjun"
+->ansible <groupname> -b -a "yum install httpd -y"  (-a  means arbitrary ;  -m means modules)
+->ansible <groupname> -b -m yum -a "pkg=httpd state=present" (present;latest;absent or install; update;remove)
+->ansible <groupname> -bm yum -a "pkg=httpd,mysql state=absent"
+->ansible <groupname> -b -m user -a "name=raj state=present"
+->ansible <groupname> -a "tail /etc/passwd"
+->ansible-playbook filename.yml
+- you can create any filename itwill take for example u can see below command
+->ansible-playbook arjunfile
+->sudo ls -la
+->ansible -s all -m service -a "name=httpd state=started"
+->ansible all -m file -a "dest=/home/arjun/file.txt mode=777"   {change file permission}
+->ansible all -m copy -a "src=/home/arjun/test.html dest=/home/arjun" {copy file}
+->ansible all -m user -a "name=testuser password=arjun" {creat user}  
+___________________________________________________________________________________
+test.yml
+
+--- # My First YAML playbook
+ - hosts: demo
+   become: yes
+   tasks:
+     - name: Install httpd on server
+       action: yum pkg=httpd state=installed
+
+----------------------------------------------
+target.yml
+
+--- # My First YAML playbook
+ - hosts: demo
+   user: arjun
+   become: yes             # yes or no
+   connection: ssh       # ssh or paramico  
+   gather_facts: yes       # yes or no
+_____________________________________________
+target.yml
+
+ - hosts: all
+   become: root
+   vars:
+     vinod: 'welcome vinod 3rd time once again'
+   tasks:
+   - name: create file1.java
+     copy:
+       dest: /home/ansible/file1.java
+       content: "Hello, Successfully created"
+   tags: vinod
+   - name: 2nd file
+     copy:
+       dest: /home/ansible/file2.java
+       content: "{{vinod}}"
+   tags: madhu
+   - name: copying file
+     copy:
+       src: /index.html
+
+----------------------------------------------
+task.yml
+
+--- # my first YAML playbook
+ - hosts: demo
+   user: arjun
+   become: yes
+   connection: ssh
+   tasks:
+     - name: Install HTTPD on centos 7
+       action: yum name=httpd state=installed
+     - name: Install MYSQL on centos 7
+       action: yum name=mysql state=installed
+
+----------------------------------------------
+varables.yml
+
+--- # My First YAML playbook
+ - hosts: demo
+   user: arjun
+   become: yes
+   connection: ssh
+   vars:
+     pkgname: httpd
+   tasks:
+     - name: install httpd server on centos 
+       action: yum name='{{ pkgname}}' state=installed
+----------------------------------------------------------------------------
+HANDLER Section
+
+--- # my first yaml playbook
+ - hosts: demo
+   user: arjun
+   become: yes
+   connection: ssh
+   tasks:
+     - name: install httpd server on centos
+       action: yum name=httpd state=installed
+       notify: restart httpd 
+    handlers:
+      - name: restart httpd
+        action: service name=httpd state=restarted
+----------------------------------------------------------------------------
+DRY RUN
+ ->ansible-playbook webserver.yml --check
+(to check wather the scrpit is right or roungh)
+-----------------------------------------------------------------------------
+LOOPS
+
+--- # loop playbook
+ - hosts: demo
+   user: arjun
+   become: yes
+   connection: yes
+   tasks:
+     - name: add a list of users
+       user: name='{{ item}}' state=present
+       with_items:
+         - Raj
+         - Sai
+         - Hari
+---------------------------------------------------------------------------
+conditionals
+
+--- # when playbook  example
+ - hosts: demo
+   user: arjun
+   become: yes
+   connection: ssh
+   tasks:
+     - name: install apache for debian
+       command: apt-get -y install apache2
+       when: ansible_os_family == "debian"
+     - name: install apache for redhat
+       command: yum -y install httpd
+       when: ansible_os_family == "redhat"
+
+cat /etc/os-rele*
+
+---------------------------------------------------------------------------
+roles:
+
+->mkdir playbook
+->cd playbook
+->mkdir -p roles/webserver/tasks/
+->vi roles/webserver/tasks/main.yml
+- name: Install httpd
+  yum: pkg=httpd state=present
+
+->vi main.yml
+--- # master playbook
+ - hosts: all
+   user: arjun
+   become: yes
+   connection: ssh
+   roles:
+     - webserver
+
+->ansible-playbook main.yml
+----------------------------------------------------------------------------
+creating empty file
+
+---
+ - hosts: all
+   user: arjun
+   become: yes
+   connection: ssh
+   tasks:
+     - name: create a file
+       file:
+        path: /opt/arjun.txt
+        state: touch
+
